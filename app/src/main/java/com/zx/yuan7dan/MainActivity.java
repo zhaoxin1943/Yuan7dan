@@ -11,6 +11,7 @@ import com.zx.yuna7danlib.ExpressionImageView;
 public class MainActivity extends ActionBarActivity {
 
     private ExpressionImageView expressionImageView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

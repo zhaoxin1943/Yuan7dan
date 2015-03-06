@@ -40,6 +40,10 @@ public class ExpressionImageView extends ImageView {
     private PointF mid = new PointF();
     private OperationListener operationListener;
     private float lastRotateDegree;
+    /**
+     * 对角线的长度
+     */
+    private float lastLength;
 
 
     private Matrix matrix = new Matrix();
@@ -172,12 +176,17 @@ public class ExpressionImageView extends ImageView {
                     }
                 } else if (isInResize(event)) {
                     lastRotateDegree = rotationToStartPoint(event);
+                    lastLength = diagonalLength(event);
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
                 if (isInResize(event)) {
                     midPointToStartPoint(event);
                     matrix.postRotate(rotationToStartPoint(event) - lastRotateDegree, mid.x, mid.y);
+                    float scale = diagonalLength(event) / lastLength;
+                    lastLength = diagonalLength(event);
+
+                    matrix.postScale(scale, scale, mid.x, mid.y);
                     lastRotateDegree = rotationToStartPoint(event);
                     invalidate();
                 }
@@ -230,6 +239,14 @@ public class ExpressionImageView extends ImageView {
         return (float) Math.toDegrees(arc);
     }
 
+    private float diagonalLength(MotionEvent event) {
+        float[] arrayOfFloat = new float[9];
+        matrix.getValues(arrayOfFloat);
+        float x = 0.0f * arrayOfFloat[0] + 0.0f * arrayOfFloat[1] + arrayOfFloat[2];
+        float y = 0.0f * arrayOfFloat[3] + 0.0f * arrayOfFloat[4] + arrayOfFloat[5];
+        float diagonalLength = (float) Math.hypot(event.getX(0) - x, event.getY(0) - y);
+        return diagonalLength;
+    }
 
     public interface OperationListener {
         void onDeleteClick();
