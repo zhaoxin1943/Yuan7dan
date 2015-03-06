@@ -44,7 +44,7 @@ public class ExpressionImageView extends ImageView {
      * 对角线的长度
      */
     private float lastLength;
-
+    private boolean isInResize = false;
 
     private Matrix matrix = new Matrix();
 
@@ -170,26 +170,39 @@ public class ExpressionImageView extends ImageView {
         int action = MotionEventCompat.getActionMasked(event);
         switch (action) {
             case MotionEvent.ACTION_DOWN:
-                if (isInDelete(event)) {
+                if (isInButton(event, dst_delete)) {
                     if (operationListener != null) {
                         operationListener.onDeleteClick();
                     }
                 } else if (isInResize(event)) {
+                    isInResize = true;
                     lastRotateDegree = rotationToStartPoint(event);
                     lastLength = diagonalLength(event);
+                    midPointToStartPoint(event);
+                } else if (isInButton(event, dst_flip)) {
+                    PointF localPointF = new PointF();
+                    midDiagonalPoint(localPointF);
+                    matrix.postScale(-1.0F, 1.0F, localPointF.x, localPointF.y);
+                    invalidate();
+                    return false;
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
-                if (isInResize(event)) {
-                    midPointToStartPoint(event);
-                    matrix.postRotate(rotationToStartPoint(event) - lastRotateDegree, mid.x, mid.y);
+                if (isInResize) {
+
+                    matrix.postRotate((rotationToStartPoint(event) - lastRotateDegree) * 2, mid.x, mid.y);
+                    lastRotateDegree = rotationToStartPoint(event);
+
                     float scale = diagonalLength(event) / lastLength;
+                    matrix.postScale(scale, scale, mid.x, mid.y);
                     lastLength = diagonalLength(event);
 
-                    matrix.postScale(scale, scale, mid.x, mid.y);
-                    lastRotateDegree = rotationToStartPoint(event);
                     invalidate();
                 }
+                break;
+            case MotionEvent.ACTION_CANCEL:
+            case MotionEvent.ACTION_UP:
+                isInResize = false;
                 break;
 
         }
@@ -197,11 +210,11 @@ public class ExpressionImageView extends ImageView {
     }
 
 
-    private boolean isInDelete(MotionEvent event) {
-        int left = dst_delete.left;
-        int right = dst_delete.right;
-        int top = dst_delete.top;
-        int bottom = dst_delete.bottom;
+    private boolean isInButton(MotionEvent event, Rect rect) {
+        int left = rect.left;
+        int right = rect.right;
+        int top = rect.top;
+        int bottom = rect.bottom;
         return event.getX(0) >= left && event.getX(0) <= right && event.getY(0) >= top && event.getY(0) <= bottom;
     }
 
@@ -222,6 +235,19 @@ public class ExpressionImageView extends ImageView {
         float f4 = f2 + event.getY(0);
         mid.set(f3 / 2, f4 / 2);
     }
+
+    private void midDiagonalPoint(PointF paramPointF) {
+        float[] arrayOfFloat = new float[9];
+        this.matrix.getValues(arrayOfFloat);
+        float f1 = 0.0F * arrayOfFloat[0] + 0.0F * arrayOfFloat[1] + arrayOfFloat[2];
+        float f2 = 0.0F * arrayOfFloat[3] + 0.0F * arrayOfFloat[4] + arrayOfFloat[5];
+        float f3 = arrayOfFloat[0] * this.mBitmap.getWidth() + arrayOfFloat[1] * this.mBitmap.getHeight() + arrayOfFloat[2];
+        float f4 = arrayOfFloat[3] * this.mBitmap.getWidth() + arrayOfFloat[4] * this.mBitmap.getHeight() + arrayOfFloat[5];
+        float f5 = f1 + f3;
+        float f6 = f2 + f4;
+        paramPointF.set(f5 / 2.0F, f6 / 2.0F);
+    }
+
 
     /**
      * 在滑动过车中X,Y是不会改变的，这里减Y，减X，其实是相当于把X,Y当做原点
