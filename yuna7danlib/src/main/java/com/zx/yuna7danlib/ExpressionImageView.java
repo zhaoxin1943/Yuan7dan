@@ -7,7 +7,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.Rect;
-import android.graphics.RectF;
 import android.support.v4.view.MotionEventCompat;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
@@ -289,7 +288,7 @@ public class ExpressionImageView extends ImageView {
                 + Math.sqrt(u2 * (u2 - a2) * (u2 - b2) * (u2 - b3))
                 + Math.sqrt(u3 * (u3 - a3) * (u3 - b3) * (u3 - b4))
                 + Math.sqrt(u4 * (u4 - a4) * (u4 - b4) * (u4 - b1));
-        return s >= ss;
+        return Math.abs(s - ss) < 0.5;
 
 
     }
