@@ -7,9 +7,11 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.support.v4.view.MotionEventCompat;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.widget.ImageView;
 import android.graphics.Matrix;
@@ -47,6 +49,12 @@ public class ExpressionImageView extends ImageView {
     private boolean isInResize = false;
 
     private Matrix matrix = new Matrix();
+    /**
+     * 是否在四条线内部
+     */
+    private boolean isInSide;
+
+    private float lastX, lastY;
 
     public ExpressionImageView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -84,21 +92,13 @@ public class ExpressionImageView extends ImageView {
     protected void onDraw(Canvas canvas) {
         float[] arrayOfFloat = new float[9];
         matrix.getValues(arrayOfFloat);
-        //左边
         float f1 = 0.0F * arrayOfFloat[0] + 0.0F * arrayOfFloat[1] + arrayOfFloat[2];
-        //上边
         float f2 = 0.0F * arrayOfFloat[3] + 0.0F * arrayOfFloat[4] + arrayOfFloat[5];
-
         float f3 = arrayOfFloat[0] * this.mBitmap.getWidth() + 0.0F * arrayOfFloat[1] + arrayOfFloat[2];
-
         float f4 = arrayOfFloat[3] * this.mBitmap.getWidth() + 0.0F * arrayOfFloat[4] + arrayOfFloat[5];
-        //左边
         float f5 = 0.0F * arrayOfFloat[0] + arrayOfFloat[1] * this.mBitmap.getHeight() + arrayOfFloat[2];
-        //下边
         float f6 = 0.0F * arrayOfFloat[3] + arrayOfFloat[4] * this.mBitmap.getHeight() + arrayOfFloat[5];
-        //右边
         float f7 = arrayOfFloat[0] * this.mBitmap.getWidth() + arrayOfFloat[1] * this.mBitmap.getHeight() + arrayOfFloat[2];
-        //下边
         float f8 = arrayOfFloat[3] * this.mBitmap.getWidth() + arrayOfFloat[4] * this.mBitmap.getHeight() + arrayOfFloat[5];
 
 
@@ -185,6 +185,10 @@ public class ExpressionImageView extends ImageView {
                     matrix.postScale(-1.0F, 1.0F, localPointF.x, localPointF.y);
                     invalidate();
                     return false;
+                } else if (isInBitmap(event)) {
+                    isInSide = true;
+                    lastX = event.getX(0);
+                    lastY = event.getY(0);
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
@@ -198,15 +202,96 @@ public class ExpressionImageView extends ImageView {
                     lastLength = diagonalLength(event);
 
                     invalidate();
+                } else if (isInSide) {
+                    float x = event.getX(0);
+                    float y = event.getY(0);
+                    matrix.postTranslate(x - lastX, y - lastY);
+                    lastX = x;
+                    lastY = y;
+                    invalidate();
                 }
                 break;
             case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP:
                 isInResize = false;
+                isInSide = false;
                 break;
 
         }
         return true;
+    }
+
+    /**
+     * 是否在四条线内部
+     *
+     * @return
+     */
+    private boolean isInBitmap(MotionEvent event) {
+        float[] arrayOfFloat1 = new float[9];
+        this.matrix.getValues(arrayOfFloat1);
+        //左上角
+        float f1 = 0.0F * arrayOfFloat1[0] + 0.0F * arrayOfFloat1[1] + arrayOfFloat1[2];
+        float f2 = 0.0F * arrayOfFloat1[3] + 0.0F * arrayOfFloat1[4] + arrayOfFloat1[5];
+        //右上角
+        float f3 = arrayOfFloat1[0] * this.mBitmap.getWidth() + 0.0F * arrayOfFloat1[1] + arrayOfFloat1[2];
+        float f4 = arrayOfFloat1[3] * this.mBitmap.getWidth() + 0.0F * arrayOfFloat1[4] + arrayOfFloat1[5];
+        //左下角
+        float f5 = 0.0F * arrayOfFloat1[0] + arrayOfFloat1[1] * this.mBitmap.getHeight() + arrayOfFloat1[2];
+        float f6 = 0.0F * arrayOfFloat1[3] + arrayOfFloat1[4] * this.mBitmap.getHeight() + arrayOfFloat1[5];
+        //右下角
+        float f7 = arrayOfFloat1[0] * this.mBitmap.getWidth() + arrayOfFloat1[1] * this.mBitmap.getHeight() + arrayOfFloat1[2];
+        float f8 = arrayOfFloat1[3] * this.mBitmap.getWidth() + arrayOfFloat1[4] * this.mBitmap.getHeight() + arrayOfFloat1[5];
+
+        float[] arrayOfFloat2 = new float[4];
+        float[] arrayOfFloat3 = new float[4];
+        //确定X方向的范围
+        arrayOfFloat2[0] = f1;//左上的左
+        arrayOfFloat2[1] = f3;//右上的右
+        arrayOfFloat2[2] = f7;//右下的右
+        arrayOfFloat2[3] = f5;//左下的左
+        //确定Y方向的范围
+        arrayOfFloat3[0] = f2;//左上的上
+        arrayOfFloat3[1] = f4;//右上的上
+        arrayOfFloat3[2] = f8;
+        arrayOfFloat3[3] = f6;
+        return pointInRect(arrayOfFloat2, arrayOfFloat3, event.getX(0), event.getY(0));
+    }
+
+    /**
+     * 判断点是否在一个矩形内部
+     *
+     * @param xRange
+     * @param yRange
+     * @param x
+     * @param y
+     * @return
+     */
+    private boolean pointInRect(float[] xRange, float[] yRange, float x, float y) {
+        //四条边的长度
+        double a1 = Math.hypot(xRange[0] - xRange[1], yRange[0] - yRange[1]);
+        double a2 = Math.hypot(xRange[1] - xRange[2], yRange[1] - yRange[2]);
+        double a3 = Math.hypot(xRange[3] - xRange[2], yRange[3] - yRange[2]);
+        double a4 = Math.hypot(xRange[0] - xRange[3], yRange[0] - yRange[3]);
+        //待检测点到四个点的距离
+        double b1 = Math.hypot(x - xRange[0], y - yRange[0]);
+        double b2 = Math.hypot(x - xRange[1], y - yRange[1]);
+        double b3 = Math.hypot(x - xRange[2], y - yRange[2]);
+        double b4 = Math.hypot(x - xRange[3], y - yRange[3]);
+
+        double u1 = (a1 + b1 + b2) / 2;
+        double u2 = (a2 + b2 + b3) / 2;
+        double u3 = (a3 + b3 + b4) / 2;
+        double u4 = (a4 + b4 + b1) / 2;
+
+        //矩形的面积
+        double s = a1 * a2;
+        double ss = Math.sqrt(u1 * (u1 - a1) * (u1 - b1) * (u1 - b2))
+                + Math.sqrt(u2 * (u2 - a2) * (u2 - b2) * (u2 - b3))
+                + Math.sqrt(u3 * (u3 - a3) * (u3 - b3) * (u3 - b4))
+                + Math.sqrt(u4 * (u4 - a4) * (u4 - b4) * (u4 - b1));
+        return s >= ss;
+
+
     }
 
 
