@@ -10,6 +10,7 @@ import android.graphics.Rect;
 import android.support.v4.view.MotionEventCompat;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.widget.ImageView;
 import android.graphics.Matrix;
@@ -56,7 +57,7 @@ public class ExpressionImageView extends ImageView {
     /**
      * 是否在编辑模式
      */
-    private boolean isInEdit=true;
+    private boolean isInEdit = true;
 
     public ExpressionImageView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -192,8 +193,8 @@ public class ExpressionImageView extends ImageView {
                 } else if (isInResize(event)) {
                     isInResize = true;
                     lastRotateDegree = rotationToStartPoint(event);
-                    lastLength = diagonalLength(event);
                     midPointToStartPoint(event);
+                    lastLength = diagonalLength(event);
                 } else if (isInButton(event, dst_flip)) {
                     PointF localPointF = new PointF();
                     midDiagonalPoint(localPointF);
@@ -217,6 +218,16 @@ public class ExpressionImageView extends ImageView {
                     matrix.postScale(scale, scale, mid.x, mid.y);
                     lastLength = diagonalLength(event);
 
+                    float[] tempArray = new float[9];
+                    matrix.getValues(tempArray);
+                    if (tempArray[0] <= 0.15f) {
+                        operationListener.onDeleteClick();
+                        MotionEvent motionEvent = MotionEvent.obtain(event);
+                        motionEvent.setAction(MotionEvent.ACTION_CANCEL);
+                        dispatchTouchEvent(motionEvent);
+                        motionEvent.recycle();
+                    }
+
                     invalidate();
                 } else if (isInSide) {
                     float x = event.getX(0);
@@ -234,7 +245,7 @@ public class ExpressionImageView extends ImageView {
                 break;
 
         }
-        if (handled){
+        if (handled) {
             operationListener.onEdit(this);
         }
         return handled;
@@ -370,16 +381,13 @@ public class ExpressionImageView extends ImageView {
     }
 
     private float diagonalLength(MotionEvent event) {
-        float[] arrayOfFloat = new float[9];
-        matrix.getValues(arrayOfFloat);
-        float x = 0.0f * arrayOfFloat[0] + 0.0f * arrayOfFloat[1] + arrayOfFloat[2];
-        float y = 0.0f * arrayOfFloat[3] + 0.0f * arrayOfFloat[4] + arrayOfFloat[5];
-        float diagonalLength = (float) Math.hypot(event.getX(0) - x, event.getY(0) - y);
+        float diagonalLength = (float) Math.hypot(event.getX(0) - mid.x, event.getY(0) - mid.y);
         return diagonalLength;
     }
 
     public interface OperationListener {
         void onDeleteClick();
+
         void onEdit(ExpressionImageView expressionImageView);
     }
 
