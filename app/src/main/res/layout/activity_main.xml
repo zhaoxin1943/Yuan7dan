@@ -1,14 +1,14 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/edit_bitmap_parent_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:gravity="center_horizontal"
     tools:context=".MainActivity">
 
-    <com.zx.yuna7danlib.ExpressionImageView
-        android:id="@+id/image_view"
+    <com.zx.yuna7danlib.FrameImageView
+        android:id="@+id/back_frame"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="centerCrop"/>
+        android:layout_height="match_parent" />
 
-</LinearLayout>
+</FrameLayout>

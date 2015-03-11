@@ -10,7 +10,6 @@ import android.graphics.Rect;
 import android.support.v4.view.MotionEventCompat;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.widget.ImageView;
 import android.graphics.Matrix;
@@ -54,6 +53,10 @@ public class ExpressionImageView extends ImageView {
     private boolean isInSide;
 
     private float lastX, lastY;
+    /**
+     * 是否在编辑模式
+     */
+    private boolean isInEdit=true;
 
     public ExpressionImageView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -89,44 +92,56 @@ public class ExpressionImageView extends ImageView {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        float[] arrayOfFloat = new float[9];
-        matrix.getValues(arrayOfFloat);
-        float f1 = 0.0F * arrayOfFloat[0] + 0.0F * arrayOfFloat[1] + arrayOfFloat[2];
-        float f2 = 0.0F * arrayOfFloat[3] + 0.0F * arrayOfFloat[4] + arrayOfFloat[5];
-        float f3 = arrayOfFloat[0] * this.mBitmap.getWidth() + 0.0F * arrayOfFloat[1] + arrayOfFloat[2];
-        float f4 = arrayOfFloat[3] * this.mBitmap.getWidth() + 0.0F * arrayOfFloat[4] + arrayOfFloat[5];
-        float f5 = 0.0F * arrayOfFloat[0] + arrayOfFloat[1] * this.mBitmap.getHeight() + arrayOfFloat[2];
-        float f6 = 0.0F * arrayOfFloat[3] + arrayOfFloat[4] * this.mBitmap.getHeight() + arrayOfFloat[5];
-        float f7 = arrayOfFloat[0] * this.mBitmap.getWidth() + arrayOfFloat[1] * this.mBitmap.getHeight() + arrayOfFloat[2];
-        float f8 = arrayOfFloat[3] * this.mBitmap.getWidth() + arrayOfFloat[4] * this.mBitmap.getHeight() + arrayOfFloat[5];
+        if (mBitmap != null) {
 
 
-        dst_delete.left = (int) (f1 - deleteBitmapWidth / 2);
-        dst_delete.top = (int) (f2 - deleteBitmapHeight / 2);
-        dst_delete.right = (int) (f1 + deleteBitmapWidth / 2);
-        dst_delete.bottom = (int) (f2 + deleteBitmapHeight / 2);
+            float[] arrayOfFloat = new float[9];
+            matrix.getValues(arrayOfFloat);
+            float f1 = 0.0F * arrayOfFloat[0] + 0.0F * arrayOfFloat[1] + arrayOfFloat[2];
+            float f2 = 0.0F * arrayOfFloat[3] + 0.0F * arrayOfFloat[4] + arrayOfFloat[5];
+            float f3 = arrayOfFloat[0] * this.mBitmap.getWidth() + 0.0F * arrayOfFloat[1] + arrayOfFloat[2];
+            float f4 = arrayOfFloat[3] * this.mBitmap.getWidth() + 0.0F * arrayOfFloat[4] + arrayOfFloat[5];
+            float f5 = 0.0F * arrayOfFloat[0] + arrayOfFloat[1] * this.mBitmap.getHeight() + arrayOfFloat[2];
+            float f6 = 0.0F * arrayOfFloat[3] + arrayOfFloat[4] * this.mBitmap.getHeight() + arrayOfFloat[5];
+            float f7 = arrayOfFloat[0] * this.mBitmap.getWidth() + arrayOfFloat[1] * this.mBitmap.getHeight() + arrayOfFloat[2];
+            float f8 = arrayOfFloat[3] * this.mBitmap.getWidth() + arrayOfFloat[4] * this.mBitmap.getHeight() + arrayOfFloat[5];
 
-        dst_resize.left = (int) (f7 - resizeBitmapWidth / 2);
-        dst_resize.right = (int) (f7 + resizeBitmapWidth / 2);
-        dst_resize.top = (int) (f8 - resizeBitmapHeight / 2);
-        dst_resize.bottom = (int) (f8 + resizeBitmapHeight / 2);
 
-        dst_flip.left = (int) (f5 - flipBitmapWidth / 2);
-        dst_flip.right = (int) (f5 + flipBitmapWidth / 2);
-        dst_flip.top = (int) (f6 - flipBitmapHeight / 2);
-        dst_flip.bottom = (int) (f6 + flipBitmapHeight / 2);
+            canvas.save();
+            canvas.drawBitmap(mBitmap, matrix, null);
+            if (isInEdit) {
 
-        canvas.save();
-        canvas.drawBitmap(mBitmap, matrix, null);
-        canvas.drawLine(f1, f2, f3, f4, localPaint);
-        canvas.drawLine(f3, f4, f7, f8, localPaint);
-        canvas.drawLine(f5, f6, f7, f8, localPaint);
-        canvas.drawLine(f5, f6, f1, f2, localPaint);
+                dst_delete.left = (int) (f1 - deleteBitmapWidth / 2);
+                dst_delete.top = (int) (f2 - deleteBitmapHeight / 2);
+                dst_delete.right = (int) (f1 + deleteBitmapWidth / 2);
+                dst_delete.bottom = (int) (f2 + deleteBitmapHeight / 2);
 
-        canvas.drawBitmap(deleteBitmap, null, dst_delete, null);
-        canvas.drawBitmap(resizeBitmap, null, dst_resize, null);
-        canvas.drawBitmap(flipBitmap, null, dst_flip, null);
-        canvas.restore();
+                dst_resize.left = (int) (f7 - resizeBitmapWidth / 2);
+                dst_resize.right = (int) (f7 + resizeBitmapWidth / 2);
+                dst_resize.top = (int) (f8 - resizeBitmapHeight / 2);
+                dst_resize.bottom = (int) (f8 + resizeBitmapHeight / 2);
+
+                dst_flip.left = (int) (f5 - flipBitmapWidth / 2);
+                dst_flip.right = (int) (f5 + flipBitmapWidth / 2);
+                dst_flip.top = (int) (f6 - flipBitmapHeight / 2);
+                dst_flip.bottom = (int) (f6 + flipBitmapHeight / 2);
+
+                canvas.drawLine(f1, f2, f3, f4, localPaint);
+                canvas.drawLine(f3, f4, f7, f8, localPaint);
+                canvas.drawLine(f5, f6, f7, f8, localPaint);
+                canvas.drawLine(f5, f6, f1, f2, localPaint);
+
+                canvas.drawBitmap(deleteBitmap, null, dst_delete, null);
+                canvas.drawBitmap(resizeBitmap, null, dst_resize, null);
+                canvas.drawBitmap(flipBitmap, null, dst_flip, null);
+            } else {
+                dst_delete.setEmpty();
+                dst_resize.setEmpty();
+                dst_flip.setEmpty();
+            }
+
+            canvas.restore();
+        }
     }
 
     @Override
@@ -167,6 +182,7 @@ public class ExpressionImageView extends ImageView {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         int action = MotionEventCompat.getActionMasked(event);
+        boolean handled = true;
         switch (action) {
             case MotionEvent.ACTION_DOWN:
                 if (isInButton(event, dst_delete)) {
@@ -183,11 +199,12 @@ public class ExpressionImageView extends ImageView {
                     midDiagonalPoint(localPointF);
                     matrix.postScale(-1.0F, 1.0F, localPointF.x, localPointF.y);
                     invalidate();
-                    return false;
                 } else if (isInBitmap(event)) {
                     isInSide = true;
                     lastX = event.getX(0);
                     lastY = event.getY(0);
+                } else {
+                    handled = false;
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
@@ -217,7 +234,10 @@ public class ExpressionImageView extends ImageView {
                 break;
 
         }
-        return true;
+        if (handled){
+            operationListener.onEdit(this);
+        }
+        return handled;
     }
 
     /**
@@ -360,10 +380,15 @@ public class ExpressionImageView extends ImageView {
 
     public interface OperationListener {
         void onDeleteClick();
-
+        void onEdit(ExpressionImageView expressionImageView);
     }
 
     public void setOperationListener(OperationListener operationListener) {
         this.operationListener = operationListener;
+    }
+
+    public void setInEdit(boolean isInEdit) {
+        this.isInEdit = isInEdit;
+        invalidate();
     }
 }
