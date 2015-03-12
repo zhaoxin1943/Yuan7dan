@@ -10,7 +10,6 @@ import android.graphics.Rect;
 import android.support.v4.view.MotionEventCompat;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.widget.ImageView;
 import android.graphics.Matrix;
@@ -58,6 +57,13 @@ public class ExpressionImageView extends ImageView {
      * 是否在编辑模式
      */
     private boolean isInEdit = true;
+
+    private static final float MIN_SCALE = 0.5f;
+
+    private static final float MAX_SCALE = 2.5f;
+
+    private double halfDiagonalLength;
+
 
     public ExpressionImageView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -149,6 +155,7 @@ public class ExpressionImageView extends ImageView {
     public void setImageResource(int resId) {
         matrix.reset();
         mBitmap = BitmapFactory.decodeResource(getResources(), resId);
+        setDiagonalLength();
         initBitmaps();
         int w = mBitmap.getWidth();
         int h = mBitmap.getHeight();
@@ -159,8 +166,13 @@ public class ExpressionImageView extends ImageView {
 
     public void setBitmap(Bitmap bitmap) {
         mBitmap = bitmap;
+        setDiagonalLength();
         initBitmaps();
         invalidate();
+    }
+
+    private void setDiagonalLength() {
+        halfDiagonalLength = Math.hypot(mBitmap.getWidth(), mBitmap.getHeight()) / 2;
     }
 
     private void initBitmaps() {
@@ -215,18 +227,15 @@ public class ExpressionImageView extends ImageView {
                     lastRotateDegree = rotationToStartPoint(event);
 
                     float scale = diagonalLength(event) / lastLength;
-                    matrix.postScale(scale, scale, mid.x, mid.y);
-                    lastLength = diagonalLength(event);
 
-                    float[] tempArray = new float[9];
-                    matrix.getValues(tempArray);
-                    if (tempArray[0] <= 0.15f) {
-                        operationListener.onDeleteClick();
-                        MotionEvent motionEvent = MotionEvent.obtain(event);
-                        motionEvent.setAction(MotionEvent.ACTION_CANCEL);
-                        dispatchTouchEvent(motionEvent);
-                        motionEvent.recycle();
+                    if (((diagonalLength(event) / halfDiagonalLength <= MIN_SCALE)) && scale < 1 ||
+                            (diagonalLength(event) / halfDiagonalLength >= MAX_SCALE) && scale > 1) {
+                        scale = 1;
+                    } else {
+                        lastLength = diagonalLength(event);
                     }
+
+                    matrix.postScale(scale, scale, mid.x, mid.y);
 
                     invalidate();
                 } else if (isInSide) {
@@ -380,6 +389,12 @@ public class ExpressionImageView extends ImageView {
         return (float) Math.toDegrees(arc);
     }
 
+    /**
+     * 触摸点到矩形中点的距离
+     *
+     * @param event
+     * @return
+     */
     private float diagonalLength(MotionEvent event) {
         float diagonalLength = (float) Math.hypot(event.getX(0) - mid.x, event.getY(0) - mid.y);
         return diagonalLength;
