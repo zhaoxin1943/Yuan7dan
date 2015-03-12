@@ -231,6 +231,9 @@ public class ExpressionImageView extends ImageView {
                     if (((diagonalLength(event) / halfDiagonalLength <= MIN_SCALE)) && scale < 1 ||
                             (diagonalLength(event) / halfDiagonalLength >= MAX_SCALE) && scale > 1) {
                         scale = 1;
+                        if (!isInResize(event)) {
+                            isInResize = false;
+                        }
                     } else {
                         lastLength = diagonalLength(event);
                     }
